@@ -1,7 +1,6 @@
-use actix_web::{get, web, web::ServiceConfig, HttpResponse, Responder};
+use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use polars::prelude::*;
 use serde::Deserialize;
-use shuttle_actix_web::ShuttleActixWeb;
 use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
@@ -34,22 +33,33 @@ async fn get_data(query: web::Json<Query>) -> impl Responder {
     let lf = LazyFrame::scan_parquet("data/processed_2022.parquet", args).unwrap();
     let select = query.select.first().unwrap();
     let computed = lf
-        .clone()
-        .lazy()
-        .filter(col(&select).neq(-1))
-        .group_by([col(&select)])
-        .agg([col("PERWT").sum().alias("sum")])
+        .filter(
+            col(&select)
+                .neq(-1)
+                .and(col("latino_race").neq(-1))
+                .and(col("SEX").neq(-1))
+                .and(col("veteran").neq(-1)),
+        )
+        .group_by([col(&select), col("SEX"), col("latino_race"), col("veteran")])
+        .agg([col("PERWT").sum().alias("count")])
         .collect()
         .unwrap();
     println!("Data {:?} \n\n Query {:?}", computed, query);
     HttpResponse::Ok().body("Hello world!")
 }
 
-#[shuttle_runtime::main]
-async fn main() -> ShuttleActixWeb<impl FnOnce(&mut ServiceConfig) + Send + Clone + 'static> {
-    let config = move |cfg: &mut ServiceConfig| {
-        cfg.service(get_data);
-    };
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    // let mut data_file = std::fs::File::open("data/processed_2022.parquet").unwrap();
+    //
+    // let data = web::Data::new(AppState {
+    //     data: ParquetReader::new(&mut data_file).finish().unwrap(),
+    // });
+    //
+    // .app_data(data.clone())
 
-    Ok(config.into())
+    HttpServer::new(move || App::new().service(get_data))
+        .bind(("127.0.0.1", 8080))?
+        .run()
+        .await
 }
