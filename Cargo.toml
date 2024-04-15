@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4.5.1"
+jemallocator = "0.5.4"
 polars = { version = "0.38.3", features = ["lazy", "parquet", "json", "pivot", "concat_str", "strings"] }
 serde = {version = "1.0.197", features = ["derive"]}
 

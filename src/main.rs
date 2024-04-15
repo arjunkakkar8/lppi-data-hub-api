@@ -1,10 +1,14 @@
 use actix_web::{get, http::header::ContentType, web, App, HttpResponse, HttpServer, Responder};
+use jemallocator::Jemalloc;
 use polars::{
     lazy::dsl::{concat_str, Expr},
     prelude::*,
 };
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
+
+#[global_allocator]
+static GLOBAL: Jemalloc = Jemalloc;
 
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
@@ -84,7 +88,8 @@ fn reformat_group_by(group_by: &Vec<String>) -> Vec<String> {
 #[get("/")]
 async fn get_data(query: web::Json<Query>) -> impl Responder {
     let args = ScanArgsParquet::default();
-    let lf = LazyFrame::scan_parquet("data/processed_2022.parquet", args).unwrap();
+    let path = Path::new("data/processed_2022.parquet");
+    let lf = LazyFrame::scan_parquet(&path, args).unwrap();
     let select_string = query.select.first().unwrap();
     let group_by = reformat_group_by(&query.group_by);
     let computed = lf
@@ -97,7 +102,7 @@ async fn get_data(query: web::Json<Query>) -> impl Responder {
             "_",
             false,
         )
-        .alias("citizenship")])
+        .alias(select_string)])
         .collect()
         .unwrap();
 
