@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "fluid": true,
+  "functions": {
+    "api/query.mjs": { "includeFiles": "api/_queries.json", "maxDuration": 60 }
+  }
+}

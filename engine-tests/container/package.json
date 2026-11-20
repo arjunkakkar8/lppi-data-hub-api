@@ -1,0 +1,7 @@
+{
+  "name": "ldh-engine-coldstart-test",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "22.x" },
+  "dependencies": { "@duckdb/node-api": "2.0.0-r.1" }
+}
